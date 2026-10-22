@@ -1,13 +1,15 @@
 """Single runtime configuration for execution and reproducibility."""
 
 import os
+from collections.abc import Mapping
 
 import torch
 
 from .amp import AMPConfig
+from .checkpoint import Checkpointer
 from .compiler import Compiler
 from .distributed import Distributed
-from .rng import RandomSeed
+from .rng import Rng
 
 
 class Runtime:
@@ -17,19 +19,13 @@ class Runtime:
     autocasting, compilation, and process-wide RNG configuration. Models and
     optimizers receive only this object instead of repeating those arguments.
     """
+    def __init__(self, device, *,
+            amp=None,
+            compile=False, compile_kwargs=None,
+            seed=None, strict_determinism=False):
 
-    def __init__(
-        self,
-        device,
-        *,
-        amp=None,
-        compile=False,
-        compile_kwargs=None,
-        seed=None,
-        strict_determinism=False,
-    ):
         self.distributed = Distributed(torch.device(device))
-        self.rng = RandomSeed(seed, strict_determinism=strict_determinism)
+        self.rng = Rng(seed, strict_determinism=strict_determinism)
         self.amp = AMPConfig(amp, device_type=self.device.type)
         compile_options = {} if compile is True else dict(compile_kwargs or {})
         self.compiler = Compiler(compile is True, **compile_options)
@@ -53,6 +49,22 @@ class Runtime:
     def prepare_model(self, model):
         """Compile, move, and optionally DDP-wrap ``model``."""
         return self.distributed.wrap_model(self.compiler(model))
+
+    def to_device(self, value):
+        """Recursively move tensors in a batch to the runtime device."""
+        if torch.is_tensor(value):
+            return value.to(self.device, non_blocking=True)
+        if isinstance(value, Mapping):
+            return type(value)({key: self.to_device(item) for key, item in value.items()})
+        if isinstance(value, tuple):
+            return tuple(self.to_device(item) for item in value)
+        if isinstance(value, list):
+            return [self.to_device(item) for item in value]
+        return value
+
+    def create_checkpointer(self, folder_path, model, *, dataset=None):
+        """Create a checkpointer using this runtime's DDP and RNG services."""
+        return Checkpointer(folder_path, model, self, dataset=dataset)
 
     def autocast(self):
         """Return the configured forward autocast context."""

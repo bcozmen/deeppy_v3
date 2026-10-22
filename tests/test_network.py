@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from network import Network
+from runtime import Runtime
 
 
 def architecture():
@@ -71,3 +72,16 @@ def test_compile_and_ddp_are_disabled_by_default():
 
     assert model.model.__class__.__name__ == "TaskModel"
     assert not hasattr(model.model, "module")
+
+
+def test_compiled_network_state_round_trip():
+    runtime = Runtime("cpu", compile=True)
+    original = Network(architecture(), runtime=runtime)
+    inputs = torch.randn(3, 4)
+    state = original.save_states()
+
+    restored = Network(architecture(), runtime=runtime)
+    restored.load_states(state)
+
+    with torch.no_grad():
+        torch.testing.assert_close(original(inputs), restored(inputs))

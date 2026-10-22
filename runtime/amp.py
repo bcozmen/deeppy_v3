@@ -1,13 +1,9 @@
 """Runtime-owned automatic mixed-precision configuration."""
-
 from contextlib import nullcontext
-
 import torch
-
 
 class AMPConfig:
     """Store AMP settings and provide the forward autocast context."""
-
     def __init__(self, config=None, *, device_type="cuda"):
         if config is None or config is False:
             self.options = None

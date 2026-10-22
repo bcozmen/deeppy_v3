@@ -1,10 +1,20 @@
 """High-level network construction facade."""
 
 import torch.nn as nn
+from torch.nn.parallel import DistributedDataParallel
 
 from .initialization import WeightInitializer
 from .layers import LayerGenerator
 from .tasks import build_task
+
+
+def _unwrap_model(model):
+    """Return the original module beneath DDP and torch.compile wrappers."""
+    if isinstance(model, DistributedDataParallel):
+        return _unwrap_model(model.module)
+    if hasattr(model, "_orig_mod"):
+        return _unwrap_model(model._orig_mod)
+    return model
 
 
 class Network(nn.Module):
@@ -73,8 +83,7 @@ class Network(nn.Module):
         return self._task_module().decode(encoded)
 
     def _task_module(self):
-        model = self.model
-        return model.module if hasattr(model, "module") else model
+        return _unwrap_model(self.model)
 
     def save_states(self):
         return {"model": self._task_module().state_dict()}

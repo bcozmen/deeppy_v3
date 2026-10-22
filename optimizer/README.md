@@ -226,8 +226,6 @@ This preserves optimizer moments, AMP's loss-scaler state, and the scheduler's c
 - Use `updated` for update-based logging, checkpoint cadence, and scheduler decisions.
 - Construct wrappers once, outside the training loop.
 - Keep the parameter iterable available for `GradientClipping`; it materializes the iterable so it can be reused.
-- The example file `optimizer/ex.py` contains placeholder `MyModel` and
-    `loader` variables that must be replaced by application code.
 
 ## Tests
 

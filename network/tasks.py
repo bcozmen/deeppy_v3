@@ -3,7 +3,6 @@ import torch.nn as nn
 
 class TaskModel(nn.Module):
     """Base task model with a shared sequential backbone."""
-
     def __init__(self, model):
         super().__init__()
         self.model = model
@@ -14,7 +13,6 @@ class TaskModel(nn.Module):
 
 class ClassificationTask(TaskModel):
     """Return thresholded outputs only during evaluation."""
-
     def __init__(self, model, threshold):
         super().__init__(model)
         self.threshold = threshold
@@ -28,7 +26,6 @@ class ClassificationTask(TaskModel):
 
 class AutoencoderTask(nn.Module):
     """Separate an encoder and decoder from one sequential model."""
-
     def __init__(self, model, encoder_len):
         super().__init__()
         self.encoder = model[:encoder_len]

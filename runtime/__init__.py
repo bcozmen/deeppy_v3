@@ -4,7 +4,7 @@ from .amp import AMPConfig
 from .checkpoint import Checkpointer
 from .compiler import Compiler
 from .distributed import Distributed
-from .rng import RandomSeed
+from .rng import Rng
 from .runtime import Runtime
 
 __all__ = [
@@ -12,6 +12,6 @@ __all__ = [
     "Checkpointer",
     "Compiler",
     "Distributed",
-    "RandomSeed",
+    "Rng",
     "Runtime",
 ]

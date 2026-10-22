@@ -1,11 +1,9 @@
 """Random-state management for reproducible training."""
-
 import random
-
 import numpy as np
 import torch
 
-class RandomSeed:
+class Rng:
 	"""Set, save, and restore Python, NumPy, and PyTorch RNG state."""
 
 	def __init__(self, seed=None, strict_determinism=False):

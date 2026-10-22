@@ -1,11 +1,8 @@
 """Model compilation configuration."""
-
 import torch
-
 
 class Compiler:
     """Compile models when enabled by the runtime configuration."""
-
     def __init__(self, enabled=False, **kwargs):
         self.enabled = enabled
         self.kwargs = kwargs

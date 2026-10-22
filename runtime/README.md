@@ -37,6 +37,10 @@ The runtime owns:
 - Optional `torch.compile` configuration.
 - Process-wide Python, NumPy, and PyTorch RNG state.
 
+Use `runtime.to_device(batch)` to recursively move tensors in tuples, lists,
+and mappings to the configured device. This is intended for trainer-owned
+batch handling and keeps device transfer out of model-specific code.
+
 The RNG is initialized from `seed` before models and optimizers are
 constructed, so parameter initialization is reproducible. Checkpointing
 remains a separate service, but uses `runtime.rng` by default.

@@ -52,32 +52,32 @@ For a standard supervised model, `Model` creates the configured networks and
 optimizers and exposes one training operation:
 
 ```python
-from callbacks import CheckpointCallback, TensorBoardLogger
-from model import Model
+from callbacks import TensorBoardLogger
+from model import ExampleModel
 
-model = Model(
+model = ExampleModel(
     runtime,
-    networks=[{
+    network_params=[{
         "arch_params": {
             "layers": [4, 32, 2],
             "blocks": [torch.nn.Linear, torch.nn.ReLU],
         },
     }],
-    optimizers=[{"lr": 1e-3}],
-    callbacks=[
-        TensorBoardLogger(log_dir="runs/example"),
-        CheckpointCallback(every_n_steps=1000),
-    ],
-    checkpoint_dir="checkpoints/example",
+    optimizer_params={"lr": 1e-3},
 )
 
 updated, loss = model.optimize((inputs, targets))
+logger = TensorBoardLogger(log_dir="runs/example")
+logger.on_optimizer_step_end(model, updated)
+checkpointer = runtime.create_checkpointer("checkpoints/example", model)
+if updated:
+    checkpointer.save()
 ```
 
-`TensorBoardLogger` writes loss and optimizer metrics to TensorBoard. The
-checkpoint service stores network, optimizer, dataset, and per-rank RNG state
-by delegating RNG persistence to `Runtime`. RNG is therefore configured before
-model construction and restored as part of checkpoint loading.
+`TensorBoardLogger` and the checkpointer are run-level services. A trainer or
+`LearnFrame` should invoke them after `model.optimize()`. The checkpoint
+service stores network, optimizer, dataset, and per-rank RNG state by
+delegating RNG persistence to `Runtime`.
 Use a separate XAI callback for actual explainability visualizations.
 
 ## Distributed training
