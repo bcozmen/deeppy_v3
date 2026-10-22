@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Editors and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# PyTorch checkpoints and experiment output
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+checkpoints/
+runs/
+outputs/
+artifacts/
+wandb/
+mlruns/
+tensorboard/
+logs/
+
+# Local datasets and caches
+datasets/
+local_data/
+.cache/
+.cache-torch/
+huggingface/
+
+# Distributed and native runtime artifacts
+*.rank*
+*.local_rank*
+torchrun-logs/
+nccl_*.log
+core
+core.*
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+v2/
