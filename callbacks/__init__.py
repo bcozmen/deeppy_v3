@@ -2,12 +2,11 @@
 
 from .base import Callback, CallbackManager
 from .checkpoint import CheckpointCallback
-from .tensorboard import TensorBoardLogger, XAI
+from .tensorboard import TensorBoardLogger
 
 __all__ = [
 	"Callback",
 	"CallbackManager",
 	"CheckpointCallback",
 	"TensorBoardLogger",
-	"XAI",
 ]

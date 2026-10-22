@@ -39,6 +39,7 @@ pip-wheel-metadata/
 checkpoints/
 runs/
 outputs/
+test_outputs/
 artifacts/
 wandb/
 mlruns/

@@ -26,7 +26,7 @@ class Checkpointer:
 		self.runtime.save_rng_state(self.folder_path)
 		self.runtime.barrier()
 
-	def load(self):
+	def load(self, cls=None):
 		self.runtime.barrier()
 		state = torch.load(self.checkpoint_file, map_location="cpu", weights_only=False)
 		self.model.load_states(state["model"])

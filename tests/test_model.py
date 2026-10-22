@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import pytest
 from itertools import chain
+from pathlib import Path
 
 from callbacks import TensorBoardLogger
 from model import BaseModel, Model
@@ -181,6 +182,33 @@ def test_model_can_log_intermediate_values_during_forward():
     model.optimize((torch.randn(4, 4), torch.randn(4, 1)))
 
     assert any(tag == "train/network1/activation" for tag, _, _ in writer.scalars)
+
+
+def test_tensorboard_output_is_stored_with_checkpoint():
+    """Leave an inspectable TensorBoard run beside the checkpoint state."""
+    run_path = Path(__file__).resolve().parents[1] / "test_outputs" / "model_run"
+    checkpoint_path = run_path / "checkpoint"
+    logs_path = checkpoint_path / "logs"
+
+    runtime = Runtime("cpu", seed=19)
+    model = Model(
+        runtime,
+        network_params=[
+            {"arch_params": {"layers": [3, 8, 1], "blocks": [nn.Linear, nn.ReLU]}}
+        ],
+        optimizer_params={"lr": 0.05},
+    )
+    checkpointer = runtime.create_checkpointer(str(checkpoint_path), model)
+    logger = TensorBoardLogger(log_dir=str(logs_path), log_gradients=True)
+
+    updated, _ = model.optimize((torch.randn(8, 3), torch.randn(8, 1)))
+    logger.on_before_optimizer_step(model)
+    logger.on_optimizer_step_end(model, updated)
+    checkpointer.save()
+    logger.close()
+
+    assert (checkpoint_path / "checkpoint.pt").exists()
+    assert list(logs_path.glob("events.out.tfevents.*"))
 
 
 def test_model_evaluate_does_not_update_parameters():
