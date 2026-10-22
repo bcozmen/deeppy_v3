@@ -167,6 +167,9 @@ Set `auto_step=False` to control the schedule manually with `scheduler_step(metr
 - returns `False` for intermediate microsteps and the optimizer's update result at the boundary.
 
 The loss division makes the accumulated gradient equal to the average gradient of the group, rather than its sum.
+The controller also tracks detached metric losses for each group. After an
+update boundary, the averaged value is available as `optimizer.accumulation.last_loss`;
+the existing `backward()` return value remains the boolean update status.
 
 ### Distributed training
 

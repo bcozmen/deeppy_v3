@@ -68,6 +68,36 @@ class Distributed:
 		if self.is_distributed:
 			dist.barrier()
 
+	def reduce_mean(self, value):
+		"""Return the mean of a tensor across ranks."""
+		if not self.is_distributed:
+			return value
+		reduced = value.detach().clone()
+		dist.all_reduce(reduced, op=dist.ReduceOp.SUM)
+		reduced /= self.world_size
+		return reduced
+
+	def gather(self, value):
+		"""Gather tensors along dimension zero, supporting uneven batch sizes."""
+		if not self.is_distributed:
+			return value
+		if value.ndim == 0:
+			value = value.reshape(1)
+
+		local_size = torch.tensor([value.size(0)], device=value.device)
+		sizes = [torch.zeros_like(local_size) for _ in range(self.world_size)]
+		dist.all_gather(sizes, local_size)
+		max_size = max(size.item() for size in sizes)
+
+		padded = value.new_zeros((max_size, *value.shape[1:]))
+		padded[: value.size(0)] = value.detach()
+		gathered = [torch.empty_like(padded) for _ in range(self.world_size)]
+		dist.all_gather(gathered, padded)
+		return torch.cat(
+			[tensor[: size.item()] for tensor, size in zip(gathered, sizes)],
+			dim=0,
+		)
+
 	def cleanup(self):
 		if self._owns_process_group and dist.is_initialized():
 			dist.destroy_process_group()

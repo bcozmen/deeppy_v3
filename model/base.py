@@ -76,12 +76,15 @@ class BaseModel(nn.Module, ABC):
         self.train()
         with self.runtime.autocast():
             loss = self.training_step(batch)
-        self.latest_loss = loss.detach()
+        metric_loss = self.runtime.reduce_mean(loss.detach())
         self.callbacks.emit("on_backward_end", self, loss)
 
         if len(self.optimizers) != 1:
             raise NotImplementedError("override optimize() for multiple optimizers")
-        updated = self.optimizers[0].backward(loss)
+        optimizer = self.optimizers[0]
+        updated = optimizer.backward(loss, metric_loss=metric_loss)
+        if optimizer.accumulation.last_loss is not None:
+            self.latest_loss = optimizer.accumulation.last_loss
         if updated:
             self.global_step += 1
         self.callbacks.emit("on_optimizer_step_end", self, updated)

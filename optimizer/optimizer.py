@@ -112,14 +112,16 @@ class Optimizer:
             return nullcontext()
         return self.amp.autocast()
 
-    def backward(self, loss):
+    def backward(self, loss, metric_loss=None):
         """Accumulate a loss and update at the configured boundary."""
-        return self.accumulation.backward(loss)
+        return self.accumulation.backward(loss, metric_loss=metric_loss)
 
     def zero_grad(self):
         """Clear gradients and reset the accumulation counter."""
         self.stack.zero_grad()
         self.accumulation.microstep = 0
+        self.accumulation.loss_sum = None
+        self.accumulation.loss_count = 0
 
     def step(self):
         """Perform one immediate update without accumulation.
@@ -131,6 +133,8 @@ class Optimizer:
         updated = self.stack.step()
         self.stack.zero_grad()
         self.accumulation.microstep = 0
+        self.accumulation.loss_sum = None
+        self.accumulation.loss_count = 0
         return updated
 
     def state_dict(self):
@@ -138,9 +142,13 @@ class Optimizer:
         return {
             "stack": self.stack.state_dict(),
             "microstep": self.accumulation.microstep,
+            "loss_sum": self.accumulation.loss_sum,
+            "loss_count": self.accumulation.loss_count,
         }
 
     def load_state_dict(self, state):
         """Restore wrapper state and the current accumulation position."""
         self.stack.load_state_dict(state["stack"])
         self.accumulation.microstep = state["microstep"]
+        self.accumulation.loss_sum = state.get("loss_sum")
+        self.accumulation.loss_count = state.get("loss_count", 0)

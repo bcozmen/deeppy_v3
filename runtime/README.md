@@ -76,3 +76,19 @@ The same code works for one process or multiple processes. Call
 `Runtime` intentionally does not own log directories or model checkpoints:
 those belong to an individual training run rather than to the process
 execution environment.
+
+For metrics, use `runtime.reduce_mean(value)` when only a scalar aggregate is
+needed. Use `runtime.gather(values)` when per-sample values must be preserved:
+
+```python
+per_sample_loss = torch.nn.functional.mse_loss(
+    predictions,
+    targets,
+    reduction="none",
+).flatten(1).mean(1)
+all_losses = runtime.gather(per_sample_loss)
+```
+
+With four ranks and a local batch size of 32, `all_losses` contains up to 128
+values. `gather()` also trims uneven local batches correctly, making it useful
+for entropy, percentile, histogram, and other custom TensorBoard statistics.

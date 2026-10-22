@@ -2,10 +2,22 @@
 
 import torch
 import torch.nn as nn
+import pytest
 
 from callbacks import CheckpointCallback, TensorBoardLogger
 from model import Model
 from runtime import Runtime
+
+
+class RecordingWriter:
+    def __init__(self):
+        self.scalars = []
+
+    def add_scalar(self, tag, value, step):
+        self.scalars.append((tag, value, step))
+
+    def close(self):
+        pass
 
 
 def test_model_builds_network_optimizer_and_checkpoint(tmp_path):
@@ -33,6 +45,26 @@ def test_model_builds_network_optimizer_and_checkpoint(tmp_path):
     model.checkpointer.load()
     logger.close()
     assert list((tmp_path / "events").glob("events.out.tfevents.*"))
+
+
+def test_tensorboard_logs_accumulated_mean_loss():
+    writer = RecordingWriter()
+    runtime = Runtime("cpu", seed=5)
+    model = Model(
+        runtime,
+        networks=[{"arch_params": {"layers": [2, 1], "blocks": [nn.Linear]}}],
+        optimizers=[{"lr": 0.1, "accumulation_steps": 2}],
+        callbacks=[TensorBoardLogger(writer=writer)],
+    )
+    batch = (torch.ones(4, 2), torch.zeros(4, 1))
+
+    _, first_loss = model.optimize(batch)
+    _, second_loss = model.optimize(batch)
+
+    logged_loss = [value for tag, value, _ in writer.scalars if tag == "loss/train"]
+    assert len(logged_loss) == 1
+    expected_loss = torch.stack([first_loss.detach(), second_loss.detach()]).mean().item()
+    assert logged_loss[0] == pytest.approx(expected_loss)
 
 
 def test_model_evaluate_does_not_update_parameters():

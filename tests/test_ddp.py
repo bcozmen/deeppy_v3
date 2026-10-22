@@ -46,6 +46,14 @@ def main():
         assert updates == 2
         assert abs(optimizer.raw_optimizer.param_groups[0]["lr"] - 0.081) < 1e-7
 
+        local_metrics = torch.full((runtime.rank + 1,), float(runtime.rank))
+        gathered_metrics = runtime.gather(local_metrics)
+        expected_metrics = torch.cat([
+            torch.full((rank + 1,), float(rank))
+            for rank in range(runtime.world_size)
+        ])
+        torch.testing.assert_close(gathered_metrics, expected_metrics)
+
         parameters = torch.cat([parameter.detach().flatten() for parameter in model.parameters()])
         minimum = parameters.clone()
         maximum = parameters.clone()

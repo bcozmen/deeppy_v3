@@ -82,5 +82,13 @@ class Runtime:
     def barrier(self):
         self.distributed.barrier()
 
+    def reduce_mean(self, value):
+        """Average a metric across DDP ranks."""
+        return self.distributed.reduce_mean(value)
+
+    def gather(self, value):
+        """Gather a metric tensor across ranks along its batch dimension."""
+        return self.distributed.gather(value)
+
     def cleanup(self):
         self.distributed.cleanup()
